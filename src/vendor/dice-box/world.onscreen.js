@@ -13181,6 +13181,15 @@ class da {
     });
   }
   renderLoop() {
+    { // наклон камеры на 45° (window.__camTilt), нужен для d4
+      const want = window.__camTilt ? 1 : 0, cam = C(this, K).activeCamera;
+      if (cam && this.__tilt !== want) {
+        const Hh = Math.hypot(cam.position.y, cam.position.z) || cam.position.y;
+        cam.position.set(0, Hh * (want ? 0.7071 : 1), Hh * (want ? 0.7071 : 0));
+        cam.setTarget(new M(0, 0, 0));
+        this.__tilt = want;
+      }
+    }
     if (C(this, me) && C(this, me) === Object.keys(C(this, Z)).length) {
       this.__tidyRun || (this.__tidyRun = __tidyStart(C(this, Z), C(this, K), C(this, fe)));
       if (this.__tidyRun.step()) {

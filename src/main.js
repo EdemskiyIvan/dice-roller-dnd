@@ -263,13 +263,13 @@ function resetResult() {
   try { box.clear() } catch {}
 }
 
-function celebrate() {
+function celebrate() { // небольшой салют (в 5 раз меньше прежнего)
   const colors = ['#ffd76a', '#e8c36a', '#fff3c4', '#ff9d2e', '#8a5cff']
-  const shot = (o) => confetti({ colors, zIndex: 10, disableForReducedMotion: true, ticks: 220, ...o })
-  shot({ particleCount: 90, spread: 80, startVelocity: 48, origin: { x: 0.5, y: 0.5 } })
-  setTimeout(() => shot({ particleCount: 60, angle: 60, spread: 65, startVelocity: 55, origin: { x: 0, y: 0.7 } }), 150)
-  setTimeout(() => shot({ particleCount: 60, angle: 120, spread: 65, startVelocity: 55, origin: { x: 1, y: 0.7 } }), 150)
-  setTimeout(() => shot({ particleCount: 50, spread: 120, startVelocity: 25, gravity: 0.7, scalar: 1.2, origin: { x: 0.5, y: 0.3 } }), 500)
+  const shot = (o) => confetti({ colors, zIndex: 10, disableForReducedMotion: true, ticks: 160, scalar: 0.6, ...o })
+  shot({ particleCount: 18, spread: 50, startVelocity: 22, origin: { x: 0.5, y: 0.5 } })
+  setTimeout(() => shot({ particleCount: 12, angle: 60, spread: 40, startVelocity: 24, origin: { x: 0.1, y: 0.7 } }), 150)
+  setTimeout(() => shot({ particleCount: 12, angle: 120, spread: 40, startVelocity: 24, origin: { x: 0.9, y: 0.7 } }), 150)
+  setTimeout(() => shot({ particleCount: 10, spread: 70, startVelocity: 14, gravity: 0.7, origin: { x: 0.5, y: 0.35 } }), 450)
 }
 
 function flash(kind) {
@@ -317,6 +317,7 @@ async function roll() {
   await box.updateConfig({ scale: baseScale() * ROLL_SIZE[DICE[state.index]] * countScale(n) }) // ждём, иначе конфиг применится посреди броска
   buzz(10)
   await Promise.race([loadSamples(), new Promise((r) => setTimeout(r, 1500))])
+  window.__camTilt = DICE[state.index] === 4 // d4 показываем под 45°, как в превью
   rollSound(n)
   box.roll(`${n}d${DICE[state.index]}`)
 }
