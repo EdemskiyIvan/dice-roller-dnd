@@ -201,12 +201,14 @@ box.onRollComplete = (groups) => {
   const values = groups.flatMap((g) => g.rolls.map((r) => r.value))
   const sides = DICE[state.index]
   const total = values.reduce((a, b) => a + b, 0)
-  const kind = state.count === 1 && sides === 20 ? (total === 20 ? 'crit' : total === 1 ? 'fail' : '') : ''
+  const n = values.length
+  // максимум на всех кубиках — золото, минимум — красный (для d4…d20 и любого количества)
+  const kind = total === n * sides ? 'crit' : total === n ? 'fail' : ''
 
   $('resultTotal').textContent = total
   $('resultParts').textContent = values.length > 1 ? values.join(' + ') : ''
   $('result').className = 'result on ' + kind
-  $('dieSub').textContent = kind === 'crit' ? 'Критический успех!' : kind === 'fail' ? 'Критический провал…' : 'Нажми, чтобы бросить снова'
+  $('dieSub').textContent = kind === 'crit' ? 'Максимум!' : kind === 'fail' ? 'Минимум…' : 'Нажми, чтобы бросить снова'
   flash(kind)
   settleSound()
   buzz(kind ? [30, 50, 30, 50, 60] : [35, 40, 18])
