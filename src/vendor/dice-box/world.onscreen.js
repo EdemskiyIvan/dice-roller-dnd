@@ -13153,9 +13153,7 @@ class da {
       scene: C(this, K)
     })), ie(this, Ke, new aa({ scene: C(this, K) })), this.onInitComplete();
   }
-  cup(m) { C(this, ne).postMessage({ action: "cup", ...m }); }
   connect(e) {
-    window.__diceWorld = this;
     ie(this, ne, e), C(this, ne).postMessage({
       action: "initBuffer",
       diceBuffer: this.diceBufferView.buffer
@@ -13163,9 +13161,6 @@ class da {
       switch (t.data.action) {
         case "updates":
           this.updatesFromPhysics(t.data.diceBuffer);
-          break;
-        case "hits":
-          window.__onDiceHits && window.__onDiceHits(t.data.hits);
           break;
         default:
           console.error("action from physicsWorker not found in offscreen worker");
