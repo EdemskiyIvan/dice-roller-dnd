@@ -180,6 +180,15 @@ function rollSound(count) {
     }
   }
 }
+
+// Звук по реальным столкновениям из физики: громкость ~ силе удара (работает и при броске, и при тряске)
+let lastHitSound = 0
+window.__onDiceHits = (list) => {
+  const now = performance.now()
+  if (now - lastHitSound < 30 || !audio()) return
+  lastHitSound = now
+  for (const st of list) hit(0, 0.18 + 0.82 * st)
+}
 function settleSound() { if (audio()) hit(0, 0.4) }
 
 /* ---------- Вибрация ---------- */
@@ -321,7 +330,6 @@ async function roll(opts = {}) {
   if (opts.cup) startCup()
   else diceWorld()?.cup({ on: false })
   window.__camTilt = DICE[state.index] === 4 // d4 показываем под 45°, как в превью
-  rollSound(n)
   box.roll(`${n}d${DICE[state.index]}`)
 }
 window.__roll = roll
@@ -344,7 +352,7 @@ function onMotion(e) {
   else if ((a = e.accelerationIncludingGravity) && a.x != null) mag = Math.abs(Math.hypot(a.x, a.y, a.z) - 9.81)
   else return
   const now = performance.now()
-  if (cup.active) return cupMotion(mag, now)
+  if (cup.active) return cupMotion(mag, now, e)
   if (mag < SHAKE_FORCE) return
   const h = motion.hits
   if (h.length && now - h[h.length - 1] < 90) return // один рывок = одно событие
@@ -357,10 +365,11 @@ function onMotion(e) {
 }
 
 /* ---------- Режим «стаканчик» (этап 2): пока трясёшь — кубики гремят, наклон тянет их ---------- */
-const cup = { active: false, start: 0, lastStrong: 0, lastKick: 0, lastTilt: 0, timer: 0 }
+const cup = { active: false, start: 0, lastStrong: 0, lastKick: 0, lastTilt: 0, timer: 0, acc: [0, 0, 0], o0: null, tiltRight: 0, tiltDown: 0 }
 const diceWorld = () => window.__diceWorld
 function startCup() {
   cup.active = true; cup.start = cup.lastStrong = performance.now()
+  cup.acc = [0, 0, 0]; cup.o0 = null; cup.tiltRight = cup.tiltDown = 0
   diceWorld()?.cup({ on: true })
   $('dieSub').textContent = 'Трясите! Остановитесь — и кубики лягут'
   clearInterval(cup.timer)
@@ -377,28 +386,39 @@ function cupCheck(now) {
   // отпускаем кубики, когда встряска закончилась (или слишком долго)
   if (cup.active && (now - cup.lastStrong > 700 || now - cup.start > 12000)) endCup()
 }
-function cupMotion(mag, now) {
+function cupMotion(mag, now, e) {
   if (mag > 6) cup.lastStrong = now
-  if (mag > 10 && now - cup.lastKick > 90) {
+  // реальное «трясение»: инерция кубиков в системе телефона = минус ускорение руки
+  const a = e && e.acceleration
+  if (a && a.x != null) { cup.acc = [a.x, a.y, a.z || 0]; sendCup(now) }
+  if (mag > 14 && now - cup.lastKick > 140) {
     cup.lastKick = now
-    diceWorld()?.cup({ kick: Math.min(mag / 12, 2.2) })
+    diceWorld()?.cup({ kick: Math.min(mag / 25, 1) }) // небольшая случайная «болтанка» для живости
     if (mag > 20) buzz(15)
   }
   cupCheck(now)
 }
-// наклон телефона → «стол» наклоняется: гравитация тянет кубики в сторону низа телефона (портретная ориентация)
+const clamp1 = (v) => Math.max(-1, Math.min(1, v))
+function sendCup(now) {
+  if (now - cup.lastTilt < 25) return
+  cup.lastTilt = now
+  // наклон (относительно положения в начале тряски) + инерция от ускорения руки.
+  // мир: +x = влево по экрану, +z = вниз по экрану
+  const [ax, ay, az] = cup.acc
+  const tx = -cup.tiltRight * 1.6 + ax * 0.05
+  const tz = cup.tiltDown * 1.6 + ay * 0.05
+  const gs = Math.max(0.3, Math.min(2, 1 + az * 0.04)) // к себе — прижимает, от себя — подбрасывает
+  diceWorld()?.cup({ t: [clamp1(tx), clamp1(tz)], gs })
+}
+// гироскоп: наклон телефона относительно того, как его держали в начале тряски
 function onTilt(e) {
   if (!cup.active || e.beta == null || e.gamma == null) return
-  const now = performance.now()
-  if (now - cup.lastTilt < 40) return
-  cup.lastTilt = now
-  const b = (e.beta * Math.PI) / 180, g = (e.gamma * Math.PI) / 180
-  const gx = Math.sin(g) * Math.cos(b)   // вправо по экрану
-  const gy = -Math.sin(b)                // вверх по экрану (минус = к низу экрана)
-  const clamp = (v) => Math.max(-1, Math.min(1, v))
-  diceWorld()?.cup({ t: [clamp(-gx * 1.4), clamp(-gy * 1.4)] }) // мир: +x = влево по экрану, +z = вниз по экрану
+  if (!cup.o0) cup.o0 = [e.beta, e.gamma]
+  const rad = Math.PI / 180
+  cup.tiltDown = Math.sin((e.beta - cup.o0[0]) * rad)   // верх телефона вперёд → кубики к низу экрана
+  cup.tiltRight = Math.sin((e.gamma - cup.o0[1]) * rad) // правый край вниз → кубики вправо
+  sendCup(performance.now())
 }
-
 function enableMotion() {
   if (motion.enabled) return
   motion.enabled = true

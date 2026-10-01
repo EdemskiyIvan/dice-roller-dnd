@@ -13164,6 +13164,9 @@ class da {
         case "updates":
           this.updatesFromPhysics(t.data.diceBuffer);
           break;
+        case "hits":
+          window.__onDiceHits && window.__onDiceHits(t.data.hits);
+          break;
         default:
           console.error("action from physicsWorker not found in offscreen worker");
           break;
