@@ -230,7 +230,7 @@ const box = new DiceBox({
 $('dieSub').textContent = 'Загрузка кубиков…'
 const ready = box.init().then(() => {
   clearInterval(initTick); addProgress(W.init - initPart); initPart = W.init
-  $('dieSub').textContent = 'Нажми на кубик, чтобы бросить'
+  $('dieSub').textContent = hint()
 })
 
 const EDGE_GAP = 10
@@ -259,7 +259,7 @@ function resetResult() {
   stage.classList.remove('shown', 'landed')
   slots.forEach((el) => el.style.removeProperty('--shift'))
   $('result').className = 'result'
-  if (!state.busy) $('dieSub').textContent = 'Нажми на кубик, чтобы бросить'
+  if (!state.busy) $('dieSub').textContent = hint()
   try { box.clear() } catch {}
 }
 
@@ -291,7 +291,7 @@ box.onRollComplete = (groups) => {
   $('resultTotal').textContent = total
   $('resultParts').textContent = values.length > 1 ? values.join(' + ') : ''
   $('result').className = 'result on ' + kind
-  $('dieSub').textContent = kind === 'crit' ? 'Максимум!' : kind === 'fail' ? 'Минимум…' : 'Нажми, чтобы бросить снова'
+  $('dieSub').textContent = kind === 'crit' ? 'Максимум!' : kind === 'fail' ? 'Минимум…' : hint(true)
   flash(kind)
   if (kind === 'crit') celebrate()
   settleSound()
@@ -322,6 +322,59 @@ async function roll() {
   box.roll(`${n}d${DICE[state.index]}`)
 }
 window.__roll = roll
+
+
+/* ---------- Встряска телефона → бросок (этап 1) ---------- */
+const motion = { enabled: false, asked: false, hits: [], lastRoll: 0 }
+const hint = (again) => motion.enabled
+  ? (again ? 'Нажми или встряхни, чтобы бросить снова' : 'Нажми на кубик или встряхни телефон')
+  : (again ? 'Нажми, чтобы бросить снова' : 'Нажми на кубик, чтобы бросить')
+const SHAKE_FORCE = 14      // м/с² без учёта гравитации: энергичный взмах
+const SHAKE_HITS = 3        // столько рывков подряд...
+const SHAKE_WINDOW = 800    // ...за столько миллисекунд
+const SHAKE_COOLDOWN = 1200 // пауза после броска, чтобы один взмах не запускал несколько бросков
+
+function onMotion(e) {
+  let a = e.acceleration
+  let mag
+  if (a && a.x != null) mag = Math.hypot(a.x, a.y, a.z)
+  else if ((a = e.accelerationIncludingGravity) && a.x != null) mag = Math.abs(Math.hypot(a.x, a.y, a.z) - 9.81)
+  else return
+  const now = performance.now()
+  if (mag < SHAKE_FORCE) return
+  const h = motion.hits
+  if (h.length && now - h[h.length - 1] < 90) return // один рывок = одно событие
+  h.push(now)
+  while (h.length && now - h[0] > SHAKE_WINDOW) h.shift()
+  if (h.length >= SHAKE_HITS && !state.busy && now - motion.lastRoll > SHAKE_COOLDOWN) {
+    motion.hits = []; motion.lastRoll = now
+    roll()
+  }
+}
+function enableMotion() {
+  if (motion.enabled) return
+  motion.enabled = true
+  addEventListener('devicemotion', onMotion)
+  if (!state.busy && !state.shown) $('dieSub').textContent = hint()
+}
+// iOS 13+: разрешение можно спросить только по жесту пользователя (тап)
+async function askMotion() {
+  if (motion.asked || typeof DeviceMotionEvent === 'undefined') return
+  motion.asked = true
+  try {
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+      if ((await DeviceMotionEvent.requestPermission()) === 'granted') enableMotion()
+    } else if ('ondevicemotion' in window) {
+      // Android/другие: разрешение не нужно, включаем только если датчик реально шлёт данные
+      const probe = (ev) => { if (ev.accelerationIncludingGravity?.x != null) enableMotion(); removeEventListener('devicemotion', probe) }
+      addEventListener('devicemotion', probe)
+    }
+  } catch {}
+}
+document.addEventListener('click', askMotion, { once: true })
+document.addEventListener('touchend', askMotion, { once: true })
+// на Android датчик доступен сразу — пробуем без ожидания тапа
+if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission !== 'function') askMotion()
 
 /* ---------- Жесты: свайп / тап ---------- */
 let sx = 0, sy = 0, down = false
