@@ -105,21 +105,41 @@ function rumble(dur, vol) {
   const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12 * vol, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
   n.connect(lp).connect(g).connect(actx.destination); n.start(t); n.stop(t + dur)
 }
-let soundTimer
+// Настоящие сэмплы ударов кубиков (из @3d-dice/dice-box-threejs, MIT)
+const hitBufs = [], tableBufs = []
+async function loadSamples() {
+  if (!audio() || hitBufs.length) return
+  const get = async (url) => {
+    try { return await actx.decodeAudioData(await (await fetch(url)).arrayBuffer()) } catch { return null }
+  }
+  const h = await Promise.all(Array.from({ length: 15 }, (_, i) => get(`/sounds/hit/dicehit_plastic${i + 1}.mp3`)))
+  const t = await Promise.all(Array.from({ length: 7 }, (_, i) => get(`/sounds/table/surface_wood_tray${i + 1}.mp3`)))
+  hitBufs.push(...h.filter(Boolean)); tableBufs.push(...t.filter(Boolean))
+}
+const pick = (a) => a[Math.floor(Math.random() * a.length)]
+function play(buf, when, vol, rate = 1) {
+  const src = actx.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate
+  const g = actx.createGain(); g.gain.value = vol
+  src.connect(g).connect(actx.destination); src.start(actx.currentTime + when)
+}
+function hit(when, vol) {
+  if (!hitBufs.length) return clack(when, vol)
+  play(pick(hitBufs), when, Math.min(1, vol), 0.92 + Math.random() * 0.16)
+  if (tableBufs.length) play(pick(tableBufs), when, Math.min(1, vol) * 0.35, 0.95 + Math.random() * 0.1)
+}
 function rollSound(count) {
   if (!audio()) return
   const dice = Math.min(count, 8)
-  rumble(1.5, Math.min(1, 0.5 + dice * 0.1))
   // отскоки: интервалы сокращаются, громкость падает
   for (let d = 0; d < dice; d++) {
-    let t = 0.05 + Math.random() * 0.12, gap = 0.2 + Math.random() * 0.08, vol = 1
-    while (gap > 0.035 && t < 1.7) {
-      clack(t, vol * (0.7 + Math.random() * 0.3))
-      t += gap * (0.85 + Math.random() * 0.3); gap *= 0.72; vol *= 0.8
+    let t = 0.05 + Math.random() * 0.15, gap = 0.22 + Math.random() * 0.08, vol = 1
+    while (gap > 0.04 && t < 1.8) {
+      hit(t, vol * (0.7 + Math.random() * 0.3))
+      t += gap * (0.85 + Math.random() * 0.3); gap *= 0.7; vol *= 0.78
     }
   }
 }
-function settleSound() { if (audio()) clack(0, 0.45) }
+function settleSound() { if (audio()) hit(0, 0.4) }
 
 /* ---------- Вибрация ---------- */
 const buzz = (p) => { try { navigator.vibrate?.(p) } catch {} }
@@ -215,7 +235,7 @@ let sx = 0, sy = 0, down = false
 stage.addEventListener('pointerdown', (e) => {
   if (e.target.closest('.counter')) return
   down = true; sx = e.clientX; sy = e.clientY
-  audio()
+  audio(); loadSamples()
 })
 stage.addEventListener('pointerup', (e) => {
   if (!down) return
