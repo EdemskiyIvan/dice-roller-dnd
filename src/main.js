@@ -281,6 +281,7 @@ function flash(kind) {
 }
 
 box.onRollComplete = (groups) => {
+  cup.active && endCup()
   const values = groups.flatMap((g) => g.rolls.map((r) => r.value))
   const sides = DICE[state.index]
   const total = values.reduce((a, b) => a + b, 0)
@@ -302,7 +303,7 @@ box.onRollComplete = (groups) => {
   scheduleBack()
 }
 
-async function roll() {
+async function roll(opts = {}) {
   if (state.busy) return
   await ready
   cancelBack()
@@ -317,6 +318,8 @@ async function roll() {
   await box.updateConfig({ scale: baseScale() * ROLL_SIZE[DICE[state.index]] * countScale(n) }) // ждём, иначе конфиг применится посреди броска
   buzz(10)
   await Promise.race([loadSamples(), new Promise((r) => setTimeout(r, 1500))])
+  if (opts.cup) startCup()
+  else diceWorld()?.cup({ on: false })
   window.__camTilt = DICE[state.index] === 4 // d4 показываем под 45°, как в превью
   rollSound(n)
   box.roll(`${n}d${DICE[state.index]}`)
@@ -341,6 +344,7 @@ function onMotion(e) {
   else if ((a = e.accelerationIncludingGravity) && a.x != null) mag = Math.abs(Math.hypot(a.x, a.y, a.z) - 9.81)
   else return
   const now = performance.now()
+  if (cup.active) return cupMotion(mag, now)
   if (mag < SHAKE_FORCE) return
   const h = motion.hits
   if (h.length && now - h[h.length - 1] < 90) return // один рывок = одно событие
@@ -348,13 +352,58 @@ function onMotion(e) {
   while (h.length && now - h[0] > SHAKE_WINDOW) h.shift()
   if (h.length >= SHAKE_HITS && !state.busy && now - motion.lastRoll > SHAKE_COOLDOWN) {
     motion.hits = []; motion.lastRoll = now
-    roll()
+    roll({ cup: true })
   }
 }
+
+/* ---------- Режим «стаканчик» (этап 2): пока трясёшь — кубики гремят, наклон тянет их ---------- */
+const cup = { active: false, start: 0, lastStrong: 0, lastKick: 0, lastTilt: 0, timer: 0 }
+const diceWorld = () => window.__diceWorld
+function startCup() {
+  cup.active = true; cup.start = cup.lastStrong = performance.now()
+  diceWorld()?.cup({ on: true })
+  $('dieSub').textContent = 'Трясите! Остановитесь — и кубики лягут'
+  clearInterval(cup.timer)
+  cup.timer = setInterval(() => cupCheck(performance.now()), 150)
+}
+function endCup() {
+  if (!cup.active) return
+  cup.active = false; clearInterval(cup.timer)
+  motion.lastRoll = performance.now()
+  diceWorld()?.cup({ on: false })
+  $('dieSub').textContent = '…'
+}
+function cupCheck(now) {
+  // отпускаем кубики, когда встряска закончилась (или слишком долго)
+  if (cup.active && (now - cup.lastStrong > 700 || now - cup.start > 12000)) endCup()
+}
+function cupMotion(mag, now) {
+  if (mag > 6) cup.lastStrong = now
+  if (mag > 10 && now - cup.lastKick > 90) {
+    cup.lastKick = now
+    diceWorld()?.cup({ kick: Math.min(mag / 12, 2.2) })
+    if (mag > 20) buzz(15)
+  }
+  cupCheck(now)
+}
+// наклон телефона → «стол» наклоняется: гравитация тянет кубики в сторону низа телефона (портретная ориентация)
+function onTilt(e) {
+  if (!cup.active || e.beta == null || e.gamma == null) return
+  const now = performance.now()
+  if (now - cup.lastTilt < 40) return
+  cup.lastTilt = now
+  const b = (e.beta * Math.PI) / 180, g = (e.gamma * Math.PI) / 180
+  const gx = Math.sin(g) * Math.cos(b)   // вправо по экрану
+  const gy = -Math.sin(b)                // вверх по экрану (минус = к низу экрана)
+  const clamp = (v) => Math.max(-1, Math.min(1, v))
+  diceWorld()?.cup({ t: [clamp(-gx * 1.4), clamp(-gy * 1.4)] }) // мир: +x = влево по экрану, +z = вниз по экрану
+}
+
 function enableMotion() {
   if (motion.enabled) return
   motion.enabled = true
   addEventListener('devicemotion', onMotion)
+  addEventListener('deviceorientation', onTilt)
   if (!state.busy && !state.shown) $('dieSub').textContent = hint()
 }
 // iOS 13+: разрешение можно спросить только по жесту пользователя (тап)
@@ -363,7 +412,10 @@ async function askMotion() {
   motion.asked = true
   try {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
-      if ((await DeviceMotionEvent.requestPermission()) === 'granted') enableMotion()
+      const reqs = [DeviceMotionEvent.requestPermission()]
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') reqs.push(DeviceOrientationEvent.requestPermission())
+      const res = await Promise.all(reqs.map((r) => r.catch(() => 'denied')))
+      if (res[0] === 'granted') enableMotion()
     } else if ('ondevicemotion' in window) {
       // Android/другие: разрешение не нужно, включаем только если датчик реально шлёт данные
       const probe = (ev) => { if (ev.accelerationIncludingGravity?.x != null) enableMotion(); removeEventListener('devicemotion', probe) }
