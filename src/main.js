@@ -156,14 +156,14 @@ const buzz = (p) => { try { navigator.vibrate?.(p) } catch {} }
 /* ---------- 3D-кубики (dice-box: Babylon.js + Ammo.js физика) ---------- */
 function sizeBox() {
   const r = carousel.getBoundingClientRect()
-  const h = Math.min(innerWidth * 1.2, r.height, 640)
+  const h = Math.min(innerWidth * 1.05, r.height, 560)
   const el = $('dice-box')
   el.style.top = `${r.top + r.height / 2 - h / 2}px`
   el.style.height = `${h}px`
   el.style.bottom = 'auto'
 }
 sizeBox()
-const baseScale = () => (innerWidth < 520 ? 18 : 16)
+const baseScale = () => (innerWidth < 520 ? 13 : 14)
 const box = new DiceBox({
   container: '#dice-box',
   assetPath: '/assets/dice-box/',
