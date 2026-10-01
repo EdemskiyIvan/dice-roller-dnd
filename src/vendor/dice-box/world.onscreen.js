@@ -844,7 +844,7 @@ function Ei(f) {
   const { scene: e } = f;
   let t;
   const i = 36.5;
-  return t = new j("TargetCamera1", new M(0, i, 0), e), t.fov = 0.25, t.minZ = 5, t.maxZ = i + 1, t.setTarget(M.Zero()), t;
+  return t = new j("TargetCamera1", new M(0, i * (window.__camTilt ? 0.7071 : 1), i * (window.__camTilt ? 0.7071 : 0)), e), t.fov = 0.25, t.minZ = 5, t.maxZ = i + 1, t.setTarget(M.Zero()), t;
 }
 class D extends He {
   /**
