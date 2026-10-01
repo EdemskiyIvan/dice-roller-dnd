@@ -26,8 +26,7 @@ body { background:
 .die-name { font-size: 20px; letter-spacing: .35em; text-transform: uppercase; color: var(--gold); text-indent: .35em; }
 .die-sub { margin-top: 6px; font-size: 12px; letter-spacing: .12em; color: var(--muted); font-family: system-ui, sans-serif; min-height: 16px; }
 
-.carousel { position: absolute; inset: 0; z-index: 0; overflow: hidden; } /* на весь экран: центр слайдера и кубиков = центр экрана */
-.top, .result, .bottom { position: relative; z-index: 1; }
+.carousel { position: relative; align-self: center; height: 100%; width: 100%; overflow: hidden; }
 .track { position: absolute; left: 0; top: 50%; display: flex; align-items: center; height: 0; transition: transform .45s cubic-bezier(.2,.8,.2,1); will-change: transform; }
 .slot { flex: none; width: var(--slot, 120px); display: flex; justify-content: center; align-items: center; transition: transform .45s cubic-bezier(.2,.8,.2,1), opacity .45s, filter .45s; transform: scale(.52); opacity: .28; filter: grayscale(.8) blur(.4px); cursor: pointer; }
 .slot.near { opacity: .4; }
@@ -80,4 +79,3 @@ body { background:
 .stage.landed .slot:not(.near):not(.active) { opacity: 0; }
 
 .stage.landed .slot.near { transform: translateX(var(--shift, 0px)) scale(.52); }
-.result { grid-row: 3; } .bottom { grid-row: 4; }
