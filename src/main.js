@@ -186,11 +186,19 @@ function settleSound() { if (audio()) hit(0, 0.4) }
 const buzz = (p) => { try { navigator.vibrate?.(p) } catch {} }
 
 /* ---------- 3D-кубики (dice-box: Babylon.js + Ammo.js физика) ---------- */
+// Слайдер и «стол» с кубиками ставим в ту же точку, что и фиолетовое свечение фона (46% высоты экрана).
+// Сдвиг вниз ограничен 90px, чтобы при любых размерах окна кубики не уехали за экран.
+const GLOW_Y = 0.46
 function sizeBox() {
-  const r = carousel.getBoundingClientRect()
-  const h = Math.min(innerWidth * 1.05, r.height, 560)
+  const stageH = stage.clientHeight
+  const rowCenter = carousel.offsetTop + carousel.offsetHeight / 2
+  const dy = Math.max(0, Math.min(90, Math.round(stageH * GLOW_Y - rowCenter)))
+  const cy = rowCenter + dy
+  carousel.style.transform = `translateY(${dy}px)`
+  document.documentElement.style.setProperty('--cy', `${cy}px`) // свечение фона — в ту же точку
+  const h = Math.min(innerWidth * 1.05, carousel.offsetHeight, 560)
   const el = $('dice-box')
-  el.style.top = `${r.top + r.height / 2 - h / 2}px`
+  el.style.top = `${cy - h / 2}px`
   el.style.height = `${h}px`
   el.style.bottom = 'auto'
 }
