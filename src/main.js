@@ -72,6 +72,36 @@ function holdRepeat(btn, d) {
 holdRepeat($('minus'), -1)
 holdRepeat($('plus'), 1)
 
+/* ---------- Прелоадер: реальный прогресс загрузки 0–100 ---------- */
+const loaderEl = $('loader'), ldRing = $('ldRing'), ldPct = $('ldPct')
+const W = { img: 1, sample: 0.5, init: 40 }
+const TOTAL = DICE.length * W.img + 22 * W.sample + W.init
+setTimeout(() => addProgress(TOTAL), 20000) // страховка: не висим на прелоадере вечно
+let loaded = 0, initPart = 0, shownPct = 0, loaderDone = false
+const addProgress = (w) => { loaded = Math.min(TOTAL, loaded + w) }
+DICE.forEach((d) => { const im = new Image(); im.onload = im.onerror = () => addProgress(W.img); im.src = `/dice/d${d}.png` })
+// у инициализации физики нет событий прогресса — плавно ползём до 90%, остальное добавим по факту
+const initTick = setInterval(() => {
+  const step = (W.init * 0.9 - initPart) * 0.06
+  if (step > 0.01) { initPart += step; addProgress(step) }
+}, 100)
+;(function frame() {
+  const target = Math.min(100, ((loaded) / TOTAL) * 100)
+  shownPct += Math.max(0.25, (target - shownPct) * 0.1) * (target > shownPct ? 1 : 0)
+  if (shownPct > target) shownPct = target
+  const v = Math.floor(shownPct)
+  ldPct.textContent = v
+  ldRing.style.setProperty('--p', shownPct.toFixed(1))
+  loaderEl.setAttribute('aria-valuenow', v)
+  if (target >= 100 && shownPct >= 99.9 && !loaderDone) {
+    loaderDone = true
+    ldPct.textContent = 100; ldRing.style.setProperty('--p', 100)
+    setTimeout(() => loaderEl.classList.add('done'), 350)
+    return
+  }
+  requestAnimationFrame(frame)
+})()
+
 /* ---------- Звук (синтез через WebAudio, без файлов) ---------- */
 let actx, noiseBuf
 function audio() {
@@ -114,9 +144,9 @@ let samplesP
 function loadSamples() {
   if (samplesP) return samplesP
   samplesP = (async () => {
-    if (!audio()) return
+    if (!audio()) { addProgress(22 * W.sample); return }
     const get = async (url) => {
-      try { return await actx.decodeAudioData(await (await fetch(url)).arrayBuffer()) } catch { return null }
+      try { return await actx.decodeAudioData(await (await fetch(url)).arrayBuffer()) } catch { return null } finally { addProgress(W.sample) }
     }
     const h = await Promise.all(Array.from({ length: 15 }, (_, i) => get(`/sounds/hit/dicehit_plastic${i + 1}.mp3`)))
     const t = await Promise.all(Array.from({ length: 7 }, (_, i) => get(`/sounds/table/surface_wood_tray${i + 1}.mp3`)))
@@ -186,7 +216,10 @@ const box = new DiceBox({
   shadowTransparency: 0.75,
 })
 $('dieSub').textContent = 'Загрузка кубиков…'
-const ready = box.init().then(() => { $('dieSub').textContent = 'Нажми на кубик, чтобы бросить' })
+const ready = box.init().then(() => {
+  clearInterval(initTick); addProgress(W.init - initPart); initPart = W.init
+  $('dieSub').textContent = 'Нажми на кубик, чтобы бросить'
+})
 
 let backTimer
 function cancelBack() { clearTimeout(backTimer) }

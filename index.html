@@ -15,6 +15,14 @@
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
+  <div id="loader" role="progressbar" aria-label="Загрузка" aria-valuemin="0" aria-valuemax="100">
+    <div class="ld-wrap">
+      <div class="ld-ring" id="ldRing"></div>
+      <img class="ld-die" src="/dice/d20.png" alt="" draggable="false" />
+    </div>
+    <div class="ld-pct"><span id="ldPct">0</span><small>%</small></div>
+    <div class="ld-text">Бросаем кости…</div>
+  </div>
   <div id="dice-box"></div>
   <div class="glow" id="glow"></div>
 
