@@ -317,7 +317,7 @@ async function roll() {
   await box.updateConfig({ scale: baseScale() * ROLL_SIZE[DICE[state.index]] * countScale(n) }) // ждём, иначе конфиг применится посреди броска
   buzz(10)
   await Promise.race([loadSamples(), new Promise((r) => setTimeout(r, 1500))])
-  window.__camTilt = DICE[state.index] === 4 // d4 показываем под 45°, как в превью
+  window.__camTilt = DICE[state.index] === 4 || DICE[state.index] === 6 // d4 и d6 показываем под 45°, как в превью
   rollSound(n)
   box.roll(`${n}d${DICE[state.index]}`)
 }
