@@ -186,15 +186,11 @@ function settleSound() { if (audio()) hit(0, 0.4) }
 const buzz = (p) => { try { navigator.vibrate?.(p) } catch {} }
 
 /* ---------- 3D-кубики (dice-box: Babylon.js + Ammo.js физика) ---------- */
-// Слайдер и «стол» с кубиками сдвигаем вниз до середины экрана; сдвиг ограничен, чтобы ничего не уехало за экран
 function sizeBox() {
-  const stageH = stage.clientHeight
-  const rowCenter = carousel.offsetTop + carousel.offsetHeight / 2
-  const dy = Math.max(0, Math.min(90, Math.round(stageH / 2 - rowCenter)))
-  carousel.style.transform = `translateY(${dy}px)`
-  const h = Math.min(innerWidth * 1.05, carousel.offsetHeight, 560)
+  const r = carousel.getBoundingClientRect()
+  const h = Math.min(innerWidth * 1.05, r.height, 560)
   const el = $('dice-box')
-  el.style.top = `${rowCenter + dy - h / 2}px`
+  el.style.top = `${r.top + r.height / 2 - h / 2}px`
   el.style.height = `${h}px`
   el.style.bottom = 'auto'
 }
