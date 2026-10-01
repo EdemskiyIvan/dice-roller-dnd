@@ -2,7 +2,9 @@ import DiceBox from '@3d-dice/dice-box'
 import confetti from 'canvas-confetti'
 
 const DICE = [20, 12, 10, 8, 6, 4] // от большего к меньшему
-const SIZE = { 20: 1, 12: 0.8, 10: 0.74, 8: 0.7, 6: 0.62, 4: 0.62 } // d20 — самый крупный
+// d20 — самый крупный; размеры в превью и при броске настраиваются отдельно
+const PREVIEW_SIZE = { 20: 1, 12: 0.8, 10: 0.74, 8: 0.7, 6: 0.72, 4: 0.72 }
+const ROLL_SIZE = { 20: 1, 12: 0.8, 10: 0.84, 8: 0.8, 6: 0.72, 4: 0.72 }
 const THEME = 'default'
 const THEME_COLOR = '#6d3df0'
 const MAX_COUNT = 99
@@ -20,7 +22,7 @@ const slots = DICE.map((s, i) => {
   el.className = 'slot'
   el.innerHTML = `<img src="/dice/d${s}.png" alt="d${s}" draggable="false" />`
   el.dataset.i = i
-  el.style.setProperty('--k', SIZE[s])
+  el.style.setProperty('--k', PREVIEW_SIZE[s])
   track.append(el)
   return el
 })
@@ -294,7 +296,7 @@ async function roll() {
   $('dieSub').textContent = '…'
   try { box.clear() } catch {}
   const n = state.count
-  box.updateConfig({ scale: baseScale() * SIZE[DICE[state.index]] * (n > 20 ? 0.6 : n > 8 ? 0.78 : 1) })
+  box.updateConfig({ scale: baseScale() * ROLL_SIZE[DICE[state.index]] * (n > 20 ? 0.6 : n > 8 ? 0.78 : 1) })
   buzz(10)
   await Promise.race([loadSamples(), new Promise((r) => setTimeout(r, 1500))])
   rollSound(n)
