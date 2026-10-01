@@ -4,8 +4,8 @@ html,body{margin:0;background:transparent;overflow:hidden}
 </style></head><body><div id="dice-box"></div>
 <script type="module">
 import DiceBox from '@3d-dice/dice-box'
-const box = new DiceBox({container:'#dice-box',assetPath:'/assets/dice-box/',theme:'default',themeColor:'#6d3df0',scale:22,
- gravity:2.4,restitution:.45,throwForce:5,spinForce:5,startingHeight:9,settleTimeout:5000,offscreen:true,lightIntensity:1.1,enableShadows:false})
+const box = new DiceBox({container:'#dice-box',assetPath:'/assets/dice-box/',theme:'default',themeColor:'#6d3df0',scale:15,
+ gravity:2.4,restitution:.45,throwForce:5,spinForce:5,startingHeight:9,settleTimeout:5000,offscreen:false,lightIntensity:1.1,enableShadows:false})
 let resolve
 box.onRollComplete = g => resolve?.(g.flatMap(x=>x.rolls.map(r=>r.value))[0])
 await box.init()
