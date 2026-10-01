@@ -9,57 +9,6 @@ const $ = (id) => document.getElementById(id)
 const stage = $('stage'), carousel = $('carousel'), glow = $('glow')
 const state = { index: 0, count: 1, busy: false, shown: false }
 
-/* ---------- SVG-иконки кубиков (превью / заглушки) ---------- */
-const poly = (n, r, rot = -90, cx = 100, cy = 100) =>
-  Array.from({ length: n }, (_, i) => {
-    const a = ((rot + (360 / n) * i) * Math.PI) / 180
-    return [cx + r * Math.cos(a), cy + r * Math.sin(a)]
-  })
-const pts = (p) => p.map((q) => q.map((v) => v.toFixed(1)).join(',')).join(' ')
-const line = (a, b) => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`
-
-function shape(sides) {
-  let outer, inner = ''
-  if (sides === 4) {
-    outer = [[100, 14], [188, 168], [12, 168]]
-    inner = outer.map((v) => line([100, 128], v)).join('')
-  } else if (sides === 6) {
-    outer = poly(6, 90)
-    inner = [outer[1], outer[3], outer[5]].map((v) => line([100, 100], v)).join('')
-  } else if (sides === 8) {
-    outer = [[100, 10], [184, 100], [100, 190], [16, 100]]
-    inner = line(outer[1], outer[3]) + line(outer[0], [100, 100]) + line([100, 100], outer[2])
-  } else if (sides === 10) {
-    outer = [[100, 8], [182, 92], [100, 192], [18, 92]]
-    inner = line([18, 92], [100, 124]) + line([100, 124], [182, 92]) + line([100, 124], [100, 192]) + line([100, 8], [100, 124])
-  } else if (sides === 12) {
-    outer = poly(10, 90)
-    const inn = poly(5, 46)
-    inner = `<polygon points="${pts(inn)}"/>` + inn.map((v, i) => line(v, outer[i * 2])).join('')
-  } else {
-    outer = poly(6, 90)
-    const inn = poly(3, 46)
-    inner = `<polygon points="${pts(inn)}"/>` +
-      inn.map((v, i) => line(v, outer[i * 2])).join('') +
-      inn.map((v, i) => line(v, outer[(i * 2 + 5) % 6])).join('')
-  }
-  return { outer, inner }
-}
-
-let uid = 0
-function iconSvg(sides) {
-  const id = `g${uid++}`
-  const { outer, inner } = shape(sides)
-  return `<svg viewBox="0 0 200 200" fill="none" stroke-linejoin="round">
-    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8a5cff"/><stop offset="1" stop-color="#2b1670"/></linearGradient></defs>
-    <g stroke="#e8c36a" stroke-width="3">
-      <polygon fill="url(#${id})" points="${pts(outer)}"/>
-      <g stroke-opacity=".75" stroke-width="2">${inner}</g>
-    </g>
-    <text class="num" x="100" y="${sides === 4 ? 140 : 118}" text-anchor="middle">${sides}</text></svg>`
-}
-
 /* ---------- Карусель ---------- */
 const track = document.createElement('div')
 track.className = 'track'
@@ -67,7 +16,7 @@ carousel.append(track)
 const slots = DICE.map((s, i) => {
   const el = document.createElement('div')
   el.className = 'slot'
-  el.innerHTML = iconSvg(s)
+  el.innerHTML = `<img src="/dice/d${s}.png" alt="d${s}" draggable="false" />`
   el.dataset.i = i
   track.append(el)
   return el
@@ -236,3 +185,16 @@ addEventListener('keydown', (e) => {
 layout()
 updateCount()
 document.fonts?.ready.then(layout)
+
+/* ---------- Полный запрет зума (iOS Safari игнорирует user-scalable=no) ---------- */
+;['gesturestart', 'gesturechange', 'gestureend'].forEach((ev) =>
+  document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }))
+document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault() }, { passive: false })
+let lastTouchEnd = 0
+document.addEventListener('touchend', (e) => {
+  const now = Date.now()
+  if (now - lastTouchEnd < 350) e.preventDefault() // двойной тап
+  lastTouchEnd = now
+}, { passive: false })
+document.addEventListener('dblclick', (e) => e.preventDefault())
+document.addEventListener('contextmenu', (e) => e.preventDefault())

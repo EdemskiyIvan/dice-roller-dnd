@@ -9,7 +9,7 @@
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
-  font-family: "Cinzel", "Trajan Pro", Georgia, "Times New Roman", serif; overscroll-behavior: none; touch-action: none; user-select: none; -webkit-user-select: none; }
+  font-family: "Cinzel", "Trajan Pro", Georgia, "Times New Roman", serif; overscroll-behavior: none; touch-action: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
 body { background:
   radial-gradient(ellipse at 50% 42%, #2a1f45 0%, #150f26 45%, #0b0912 80%); }
 
@@ -31,9 +31,9 @@ body { background:
 .slot { flex: none; width: var(--slot, 120px); display: flex; justify-content: center; align-items: center; transition: transform .45s cubic-bezier(.2,.8,.2,1), opacity .45s, filter .45s; transform: scale(.52); opacity: .28; filter: grayscale(.8) blur(.4px); cursor: pointer; }
 .slot.near { opacity: .4; }
 .slot.active { transform: scale(1); opacity: 1; filter: none; cursor: pointer; }
-.slot svg { width: var(--die, 220px); height: var(--die, 220px); overflow: visible; display: block; }
-.slot.active svg { animation: float 4s ease-in-out infinite; filter: drop-shadow(0 0 28px rgba(232,195,106,.35)); }
-.stage.rolling .slot.active svg, .stage.shown .slot.active svg { opacity: 0; animation: none; transition: opacity .12s; }
+.slot img { width: var(--die, 220px); height: var(--die, 220px); object-fit: contain; display: block; pointer-events: none; -webkit-user-drag: none; }
+.slot.active img { animation: float 4s ease-in-out infinite; filter: drop-shadow(0 18px 24px rgba(0,0,0,.55)) drop-shadow(0 0 30px rgba(140,100,255,.4)); }
+.stage.shown .slot.active img { opacity: 0; animation: none; transition: opacity .12s; }
 @keyframes float { 0%,100% { translate: 0 -6px; } 50% { translate: 0 6px; } }
 .slot .num { font: 600 54px "Cinzel", Georgia, serif; fill: var(--text); }
 
