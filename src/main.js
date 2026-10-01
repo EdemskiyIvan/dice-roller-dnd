@@ -188,7 +188,22 @@ const box = new DiceBox({
 $('dieSub').textContent = 'Загрузка кубиков…'
 const ready = box.init().then(() => { $('dieSub').textContent = 'Нажми на кубик, чтобы бросить' })
 
+let backTimer
+const diceEl = $('dice-box')
+function cancelBack() { clearTimeout(backTimer); diceEl.style.opacity = '' }
+// через 0.5 с после результата 3D-кубики плавно исчезают, возвращается слайдер
+function scheduleBack() {
+  cancelBack()
+  backTimer = setTimeout(() => {
+    diceEl.style.opacity = '0'
+    stage.classList.remove('shown')
+    state.shown = false
+    backTimer = setTimeout(() => { try { box.clear() } catch {} diceEl.style.opacity = '' }, 400)
+  }, 500)
+}
+
 function resetResult() {
+  cancelBack()
   state.shown = false
   stage.classList.remove('shown')
   $('result').className = 'result'
@@ -232,11 +247,13 @@ box.onRollComplete = (groups) => {
   state.busy = false
   state.shown = true
   updateCount()
+  scheduleBack()
 }
 
 async function roll() {
   if (state.busy) return
   await ready
+  cancelBack()
   state.busy = true
   updateCount()
   stage.classList.add('shown')

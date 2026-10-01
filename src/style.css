@@ -13,7 +13,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
 body { background:
   radial-gradient(ellipse at 50% 42%, #2a1f45 0%, #150f26 45%, #0b0912 80%); }
 
-#dice-box { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
+#dice-box { position: fixed; inset: 0; z-index: 4; pointer-events: none; transition: opacity .4s; }
 #dice-box canvas { width: 100%; height: 100%; display: block; }
 
 .glow { position: fixed; z-index: 1; left: 50%; top: 46%; width: 90vmin; height: 90vmin; translate: -50% -50%; border-radius: 50%;
