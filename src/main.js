@@ -234,6 +234,8 @@ function scheduleBack() {
 
 function resetResult() {
   cancelBack()
+  $('resultTotal').textContent = ''
+  $('resultParts').textContent = ''
   state.shown = false
   stage.classList.remove('shown', 'landed')
   $('result').className = 'result'

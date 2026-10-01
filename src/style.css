@@ -73,3 +73,6 @@ body { background:
 .ld-pct { font: 700 40px/1 "Cinzel", Georgia, serif; color: var(--text); text-shadow: 0 0 20px rgba(232,195,106,.5); }
 .ld-pct small { font-size: 18px; margin-left: 3px; color: var(--gold); }
 .ld-text { font: 12px system-ui, sans-serif; letter-spacing: .25em; text-transform: uppercase; color: var(--muted); }
+
+.result:not(.on) .result-parts { opacity: 0; }
+.result-parts { transition: opacity .25s; }
