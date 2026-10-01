@@ -1,5 +1,4 @@
 import DiceBox from './vendor/dice-box/dice-box.es.js' // локальная копия с доводкой кубиков (см. TIDY PATCH)
-import confetti from 'canvas-confetti'
 
 const DICE = [20, 12, 10, 8, 6, 4] // от большего к меньшему
 // d20 — самый крупный; размеры в превью и при броске настраиваются отдельно
@@ -263,14 +262,20 @@ function resetResult() {
   try { box.clear() } catch {}
 }
 
-function celebrate() { // небольшой салют (в 5 раз меньше прежнего)
-  const colors = ['#ffd76a', '#e8c36a', '#fff3c4', '#ff9d2e', '#8a5cff']
-  const shot = (o) => confetti({ colors, zIndex: 10, disableForReducedMotion: true, ticks: 160, scalar: 0.6, ...o })
-  shot({ particleCount: 18, spread: 50, startVelocity: 22, origin: { x: 0.5, y: 0.5 } })
-  setTimeout(() => shot({ particleCount: 12, angle: 60, spread: 40, startVelocity: 24, origin: { x: 0.1, y: 0.7 } }), 150)
-  setTimeout(() => shot({ particleCount: 12, angle: 120, spread: 40, startVelocity: 24, origin: { x: 0.9, y: 0.7 } }), 150)
-  setTimeout(() => shot({ particleCount: 10, spread: 70, startVelocity: 14, gravity: 0.7, origin: { x: 0.5, y: 0.35 } }), 450)
+// Победный эффект на максимуме: золотые лучи света, расходящиеся кольца и искры вокруг кубиков
+function celebrate() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const fx = document.createElement('div')
+  fx.className = 'win-fx'
+  fx.innerHTML = '<div class="win-rays"></div><div class="win-ring"></div><div class="win-ring r2"></div>' +
+    Array.from({ length: 16 }, (_, i) => {
+      const ang = (i / 16) * Math.PI * 2 + Math.random() * 0.3, d = 90 + Math.random() * 110
+      return `<i class="win-spark" style="--dx:${Math.cos(ang) * d}px;--dy:${Math.sin(ang) * d}px;animation-delay:${Math.random() * 0.15}s"></i>`
+    }).join('')
+  document.body.append(fx)
+  setTimeout(() => fx.remove(), 2200)
 }
+window.__celebrate = celebrate
 
 function flash(kind) {
   glow.style.setProperty('--glow',
