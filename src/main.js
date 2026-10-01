@@ -1,4 +1,4 @@
-import DiceBox from '@3d-dice/dice-box'
+import DiceBox from './vendor/dice-box/dice-box.es.js' // локальная копия с доводкой кубиков (см. TIDY PATCH)
 import confetti from 'canvas-confetti'
 
 const DICE = [20, 12, 10, 8, 6, 4] // от большего к меньшему
@@ -195,6 +195,8 @@ function sizeBox() {
   el.style.bottom = 'auto'
 }
 sizeBox()
+// чем больше кубиков, тем мельче — чтобы все помещались на столе без наездов
+const countScale = (n) => (n <= 2 ? 1 : n <= 4 ? 0.8 : n <= 6 ? 0.64 : n <= 9 ? 0.52 : n <= 16 ? 0.4 : n <= 30 ? 0.3 : 0.22)
 const baseScale = () => (innerWidth < 520 ? 13 : 14)
 const box = new DiceBox({
   container: '#dice-box',
@@ -212,7 +214,7 @@ const box = new DiceBox({
   spinForce: 5,
   startingHeight: 9,
   settleTimeout: 5000,
-  offscreen: true,
+  offscreen: false, // нужен доступ к сцене для доводки кубиков
   lightIntensity: 1.1,
   enableShadows: true,
   shadowTransparency: 0.75,
@@ -304,7 +306,7 @@ async function roll() {
   $('dieSub').textContent = '…'
   try { box.clear() } catch {}
   const n = state.count
-  box.updateConfig({ scale: baseScale() * ROLL_SIZE[DICE[state.index]] * (n > 20 ? 0.6 : n > 8 ? 0.78 : 1) })
+  await box.updateConfig({ scale: baseScale() * ROLL_SIZE[DICE[state.index]] * countScale(n) }) // ждём, иначе конфиг применится посреди броска
   buzz(10)
   await Promise.race([loadSamples(), new Promise((r) => setTimeout(r, 1500))])
   rollSound(n)
