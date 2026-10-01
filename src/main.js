@@ -262,18 +262,14 @@ function resetResult() {
   try { box.clear() } catch {}
 }
 
-// Победный эффект на максимуме: золотые лучи света, расходящиеся кольца и искры вокруг кубиков
+// Победный эффект на максимуме: одна мягкая золотая градиентная волна из центра к краям экрана
 function celebrate() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
   const fx = document.createElement('div')
   fx.className = 'win-fx'
-  fx.innerHTML = '<div class="win-rays"></div><div class="win-ring"></div><div class="win-ring r2"></div>' +
-    Array.from({ length: 16 }, (_, i) => {
-      const ang = (i / 16) * Math.PI * 2 + Math.random() * 0.3, d = 90 + Math.random() * 110
-      return `<i class="win-spark" style="--dx:${Math.cos(ang) * d}px;--dy:${Math.sin(ang) * d}px;animation-delay:${Math.random() * 0.15}s"></i>`
-    }).join('')
+  fx.innerHTML = '<div class="win-wave"></div>'
   document.body.append(fx)
-  setTimeout(() => fx.remove(), 2200)
+  setTimeout(() => fx.remove(), 2000)
 }
 window.__celebrate = celebrate
 

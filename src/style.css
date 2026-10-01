@@ -80,19 +80,11 @@ body { background:
 
 .stage.landed .slot.near { transform: translateX(var(--shift, 0px)) scale(.52); }
 
-/* ---------- Победный эффект (максимум) ---------- */
+/* ---------- Победный эффект (максимум): золотая волна ---------- */
 .win-fx { position: fixed; left: 50%; top: var(--cy, 46%); width: 0; height: 0; pointer-events: none; z-index: 2; }
-.win-rays { position: absolute; left: -75vmax; top: -75vmax; width: 150vmax; height: 150vmax; border-radius: 50%;
-  background: repeating-conic-gradient(rgba(255,215,106,.5) 0 5deg, transparent 5deg 15deg);
-  -webkit-mask: radial-gradient(circle, #000 0, transparent 38%); mask: radial-gradient(circle, #000 0, transparent 38%);
-  animation: winRays 1.9s ease-out forwards; }
-@keyframes winRays { 0% { opacity: 0; transform: rotate(0) scale(.5); } 18% { opacity: 1; } 100% { opacity: 0; transform: rotate(35deg) scale(1.05); } }
-.win-ring { position: absolute; left: -45px; top: -45px; width: 90px; height: 90px; border-radius: 50%; border: 3px solid rgba(255,225,130,.95);
-  box-shadow: 0 0 28px rgba(255,215,106,.75), inset 0 0 18px rgba(255,215,106,.5); animation: winRing 1.2s ease-out forwards; }
-.win-ring.r2 { animation-delay: .22s; opacity: 0; animation-fill-mode: forwards; }
-@keyframes winRing { 0% { transform: scale(.3); opacity: 1; } 100% { transform: scale(7.5); opacity: 0; } }
-.win-spark { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: #fff3c4;
-  box-shadow: 0 0 10px 3px rgba(255,215,106,.9); animation: winSpark 1.3s ease-out forwards; }
-@keyframes winSpark { 0% { transform: translate(0,0) scale(1.2); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; } }
-.result.crit .result-total { animation: winPulse .9s ease-out; }
-@keyframes winPulse { 0% { transform: scale(.8); } 35% { transform: scale(1.3); } 100% { transform: scale(1); } }
+.win-wave { position: absolute; left: -80vmax; top: -80vmax; width: 160vmax; height: 160vmax; border-radius: 50%;
+  background: radial-gradient(circle, transparent 0, transparent 44%, rgba(232,195,106,.0) 46%, rgba(232,195,106,.5) 49%, rgba(255,226,140,.22) 52.5%, transparent 56%);
+  animation: winWave 1.9s cubic-bezier(.25,.5,.3,1) forwards; opacity: 0; }
+@keyframes winWave { 0% { transform: scale(.04); opacity: 0; } 12% { opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+.result.crit .result-total { animation: winPulse .8s ease-out; }
+@keyframes winPulse { 0% { transform: scale(.9); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
