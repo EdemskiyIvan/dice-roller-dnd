@@ -69,6 +69,58 @@ function holdRepeat(btn, d) {
 holdRepeat($('minus'), -1)
 holdRepeat($('plus'), 1)
 
+/* ---------- Звук (синтез через WebAudio, без файлов) ---------- */
+let actx, noiseBuf
+function audio() {
+  try {
+    if (!actx) {
+      actx = new (window.AudioContext || window.webkitAudioContext)()
+      noiseBuf = actx.createBuffer(1, actx.sampleRate, actx.sampleRate)
+      const d = noiseBuf.getChannelData(0)
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1
+    }
+    if (actx.state !== 'running') actx.resume()
+  } catch {}
+  return actx
+}
+function clack(when, vol = 1) {
+  const t = actx.currentTime + when
+  const out = actx.createGain(); out.gain.value = 0.55 * vol; out.connect(actx.destination)
+  // «щелчок» — полосовой шум
+  const n = actx.createBufferSource(); n.buffer = noiseBuf; n.playbackRate.value = 0.8 + Math.random() * 0.6
+  const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800 + Math.random() * 2600; bp.Q.value = 1.2
+  const ng = actx.createGain(); ng.gain.setValueAtTime(1, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.05)
+  n.connect(bp).connect(ng).connect(out); n.start(t, Math.random() * 0.5, 0.08)
+  // «стук» — низкий тон
+  const o = actx.createOscillator(); o.type = 'triangle'
+  const f = 170 + Math.random() * 260
+  o.frequency.setValueAtTime(f * 1.4, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.05)
+  const og = actx.createGain(); og.gain.setValueAtTime(0.8, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.09)
+  o.connect(og).connect(out); o.start(t); o.stop(t + 0.1)
+}
+function rumble(dur, vol) {
+  const t = actx.currentTime
+  const n = actx.createBufferSource(); n.buffer = noiseBuf; n.loop = true
+  const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(200, t + dur)
+  const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12 * vol, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+  n.connect(lp).connect(g).connect(actx.destination); n.start(t); n.stop(t + dur)
+}
+let soundTimer
+function rollSound(count) {
+  if (!audio()) return
+  const dice = Math.min(count, 8)
+  rumble(1.5, Math.min(1, 0.5 + dice * 0.1))
+  // отскоки: интервалы сокращаются, громкость падает
+  for (let d = 0; d < dice; d++) {
+    let t = 0.05 + Math.random() * 0.12, gap = 0.2 + Math.random() * 0.08, vol = 1
+    while (gap > 0.035 && t < 1.7) {
+      clack(t, vol * (0.7 + Math.random() * 0.3))
+      t += gap * (0.85 + Math.random() * 0.3); gap *= 0.72; vol *= 0.8
+    }
+  }
+}
+function settleSound() { if (audio()) clack(0, 0.45) }
+
 /* ---------- Вибрация ---------- */
 const buzz = (p) => { try { navigator.vibrate?.(p) } catch {} }
 
@@ -134,6 +186,7 @@ box.onRollComplete = (groups) => {
   $('result').className = 'result on ' + kind
   $('dieSub').textContent = kind === 'crit' ? 'Критический успех!' : kind === 'fail' ? 'Критический провал…' : 'Нажми, чтобы бросить снова'
   flash(kind)
+  settleSound()
   buzz(kind ? [30, 50, 30, 50, 60] : [35, 40, 18])
   state.busy = false
   state.shown = true
@@ -152,6 +205,7 @@ async function roll() {
   const n = state.count
   box.updateConfig({ scale: baseScale() * (n > 20 ? 0.6 : n > 8 ? 0.78 : 1) })
   buzz(10)
+  rollSound(n)
   box.roll(`${n}d${DICE[state.index]}`)
 }
 window.__roll = roll
@@ -161,6 +215,7 @@ let sx = 0, sy = 0, down = false
 stage.addEventListener('pointerdown', (e) => {
   if (e.target.closest('.counter')) return
   down = true; sx = e.clientX; sy = e.clientY
+  audio()
 })
 stage.addEventListener('pointerup', (e) => {
   if (!down) return
