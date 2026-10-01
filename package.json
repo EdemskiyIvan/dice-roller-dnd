@@ -3,7 +3,17 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "scripts": { "dev": "vite --port 3010 --host", "build": "vite build", "preview": "vite preview --port 3010" },
-  "dependencies": { "@3d-dice/dice-box": "^1.1.4", "@3d-dice/dice-themes": "^0.2.1" },
-  "devDependencies": { "vite": "^7.0.0" }
+  "scripts": {
+    "dev": "vite --port 3010 --host",
+    "build": "vite build",
+    "preview": "vite preview --port 3010"
+  },
+  "dependencies": {
+    "@3d-dice/dice-box": "^1.1.4",
+    "@3d-dice/dice-themes": "^0.2.1",
+    "canvas-confetti": "^1.9.4"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  }
 }

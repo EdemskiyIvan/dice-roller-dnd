@@ -1,4 +1,5 @@
 import DiceBox from '@3d-dice/dice-box'
+import confetti from 'canvas-confetti'
 
 const DICE = [20, 12, 10, 8, 6, 4] // от большего к меньшему
 const SIZE = { 20: 1, 12: 0.8, 10: 0.74, 8: 0.7, 6: 0.62, 4: 0.62 } // d20 — самый крупный
@@ -109,15 +110,21 @@ function rumble(dur, vol) {
 }
 // Настоящие сэмплы ударов кубиков (из @3d-dice/dice-box-threejs, MIT)
 const hitBufs = [], tableBufs = []
-async function loadSamples() {
-  if (!audio() || hitBufs.length) return
-  const get = async (url) => {
-    try { return await actx.decodeAudioData(await (await fetch(url)).arrayBuffer()) } catch { return null }
-  }
-  const h = await Promise.all(Array.from({ length: 15 }, (_, i) => get(`/sounds/hit/dicehit_plastic${i + 1}.mp3`)))
-  const t = await Promise.all(Array.from({ length: 7 }, (_, i) => get(`/sounds/table/surface_wood_tray${i + 1}.mp3`)))
-  hitBufs.push(...h.filter(Boolean)); tableBufs.push(...t.filter(Boolean))
+let samplesP
+function loadSamples() {
+  if (samplesP) return samplesP
+  samplesP = (async () => {
+    if (!audio()) return
+    const get = async (url) => {
+      try { return await actx.decodeAudioData(await (await fetch(url)).arrayBuffer()) } catch { return null }
+    }
+    const h = await Promise.all(Array.from({ length: 15 }, (_, i) => get(`/sounds/hit/dicehit_plastic${i + 1}.mp3`)))
+    const t = await Promise.all(Array.from({ length: 7 }, (_, i) => get(`/sounds/table/surface_wood_tray${i + 1}.mp3`)))
+    hitBufs.push(...h.filter(Boolean)); tableBufs.push(...t.filter(Boolean))
+  })()
+  return samplesP
 }
+loadSamples() // грузим заранее, чтобы первый бросок уже звучал настоящими сэмплами
 const pick = (a) => a[Math.floor(Math.random() * a.length)]
 function play(buf, when, vol, rate = 1) {
   const src = actx.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate
@@ -149,14 +156,14 @@ const buzz = (p) => { try { navigator.vibrate?.(p) } catch {} }
 /* ---------- 3D-кубики (dice-box: Babylon.js + Ammo.js физика) ---------- */
 function sizeBox() {
   const r = carousel.getBoundingClientRect()
-  const h = Math.min(innerWidth * 1.05, r.height, 560)
+  const h = Math.min(innerWidth * 1.2, r.height, 640)
   const el = $('dice-box')
   el.style.top = `${r.top + r.height / 2 - h / 2}px`
   el.style.height = `${h}px`
   el.style.bottom = 'auto'
 }
 sizeBox()
-const baseScale = () => (innerWidth < 520 ? 13 : 14)
+const baseScale = () => (innerWidth < 520 ? 18 : 16)
 const box = new DiceBox({
   container: '#dice-box',
   assetPath: '/assets/dice-box/',
@@ -189,6 +196,15 @@ function resetResult() {
   try { box.clear() } catch {}
 }
 
+function celebrate() {
+  const colors = ['#ffd76a', '#e8c36a', '#fff3c4', '#ff9d2e', '#8a5cff']
+  const shot = (o) => confetti({ colors, zIndex: 10, disableForReducedMotion: true, ticks: 220, ...o })
+  shot({ particleCount: 90, spread: 80, startVelocity: 48, origin: { x: 0.5, y: 0.5 } })
+  setTimeout(() => shot({ particleCount: 60, angle: 60, spread: 65, startVelocity: 55, origin: { x: 0, y: 0.7 } }), 150)
+  setTimeout(() => shot({ particleCount: 60, angle: 120, spread: 65, startVelocity: 55, origin: { x: 1, y: 0.7 } }), 150)
+  setTimeout(() => shot({ particleCount: 50, spread: 120, startVelocity: 25, gravity: 0.7, scalar: 1.2, origin: { x: 0.5, y: 0.3 } }), 500)
+}
+
 function flash(kind) {
   glow.style.setProperty('--glow',
     kind === 'crit' ? 'rgba(255,215,106,.8)' : kind === 'fail' ? 'rgba(255,70,70,.65)' : 'rgba(150,110,255,.55)')
@@ -210,6 +226,7 @@ box.onRollComplete = (groups) => {
   $('result').className = 'result on ' + kind
   $('dieSub').textContent = kind === 'crit' ? 'Максимум!' : kind === 'fail' ? 'Минимум…' : 'Нажми, чтобы бросить снова'
   flash(kind)
+  if (kind === 'crit') celebrate()
   settleSound()
   buzz(kind ? [30, 50, 30, 50, 60] : [35, 40, 18])
   state.busy = false
@@ -229,6 +246,7 @@ async function roll() {
   const n = state.count
   box.updateConfig({ scale: baseScale() * SIZE[DICE[state.index]] * (n > 20 ? 0.6 : n > 8 ? 0.78 : 1) })
   buzz(10)
+  await Promise.race([loadSamples(), new Promise((r) => setTimeout(r, 1500))])
   rollSound(n)
   box.roll(`${n}d${DICE[state.index]}`)
 }
