@@ -13,7 +13,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
 body { background:
   radial-gradient(ellipse at 50% 42%, #2a1f45 0%, #150f26 45%, #0b0912 80%); }
 
-#dice-box { position: fixed; inset: 0; z-index: 4; pointer-events: none; transition: opacity .4s; }
+#dice-box { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
 #dice-box canvas { width: 100%; height: 100%; display: block; }
 
 .glow { position: fixed; z-index: 1; left: 50%; top: 46%; width: 90vmin; height: 90vmin; translate: -50% -50%; border-radius: 50%;
@@ -33,7 +33,7 @@ body { background:
 .slot.active { transform: scale(1); opacity: 1; filter: none; cursor: pointer; }
 .slot img { width: calc(var(--die, 220px) * var(--k, 1)); height: calc(var(--die, 220px) * var(--k, 1)); object-fit: contain; display: block; pointer-events: none; -webkit-user-drag: none; }
 .slot.active img { animation: float 4s ease-in-out infinite; filter: drop-shadow(0 18px 24px rgba(0,0,0,.55)) drop-shadow(0 0 30px rgba(140,100,255,.4)); }
-.stage.shown .slot.active img { opacity: 0; animation: none; transition: opacity .12s; }
+.stage.shown .slot.active img, .stage.landed .slot.active img { opacity: 0; animation: none; transition: opacity .12s; }
 @keyframes float { 0%,100% { translate: 0 -6px; } 50% { translate: 0 6px; } }
 .slot .num { font: 600 54px "Cinzel", Georgia, serif; fill: var(--text); }
 
