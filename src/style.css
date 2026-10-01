@@ -77,3 +77,5 @@ body { background:
 .result:not(.on) .result-parts { opacity: 0; }
 .result-parts { transition: opacity .25s; }
 .stage.landed .slot:not(.near):not(.active) { opacity: 0; }
+
+.stage.landed .slot.near { transform: translateX(var(--shift, 0px)) scale(.52); }

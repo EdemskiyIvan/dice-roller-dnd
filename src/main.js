@@ -223,12 +223,19 @@ const ready = box.init().then(() => {
   $('dieSub').textContent = 'Нажми на кубик, чтобы бросить'
 })
 
+const EDGE_GAP = 10
 let backTimer
 function cancelBack() { clearTimeout(backTimer) }
 // слайдер пропадает только на время броска; через 0.5 с после результата возвращается (3D-кубики остаются как есть)
 function scheduleBack() {
   cancelBack()
   backTimer = setTimeout(() => {
+    // два видимых соседа разъезжаются к краям экрана с отступом 10px
+    slots.forEach((el, i) => {
+      if (Math.abs(i - state.index) !== 1) return
+      const r = el.querySelector('img').getBoundingClientRect()
+      el.style.setProperty('--shift', `${i < state.index ? EDGE_GAP - r.left : innerWidth - EDGE_GAP - r.right}px`)
+    })
     stage.classList.remove('shown')
     stage.classList.add('landed')
   }, 500)
@@ -240,6 +247,7 @@ function resetResult() {
   $('resultParts').textContent = ''
   state.shown = false
   stage.classList.remove('shown', 'landed')
+  slots.forEach((el) => el.style.removeProperty('--shift'))
   $('result').className = 'result'
   if (!state.busy) $('dieSub').textContent = 'Нажми на кубик, чтобы бросить'
   try { box.clear() } catch {}
