@@ -13033,7 +13033,19 @@ function __tidyPre(die, scene) {
 function __tidyPost(die) {
   if (die.__t) { const q = die.__t.q0; die.mesh.rotationQuaternion.set(q.x, q.y, q.z, q.w); }
 }
-function __tidyStart(diceMap, scene, canvas) {
+// Наклон камеры k=0..1 (0 — сверху, 1 — под 45°) и поворот света в сторону зрителя
+function __tilt(world, k) {
+  const cam = C(world, K).activeCamera;
+  if (!cam) return;
+  if (!world.__tiltH) world.__tiltH = Math.hypot(cam.position.y, cam.position.z) || cam.position.y;
+  const th = k * Math.PI / 4, H = world.__tiltH;
+  cam.position.set(0, H * Math.cos(th), H * Math.sin(th));
+  cam.setTarget(new M(0, 0, 0));
+  const L = C(world, ce) && C(world, ce).directional;
+  if (L) L.direction = new M(-0.3, -1 + 0.25 * k, 0.4 - 1.05 * k);
+  world.__tiltK = k;
+}
+function __tidyStart(diceMap, scene, canvas, setTilt) {
   const dice = Object.values(diceMap).filter((d) => d.mesh && d.__t);
   if (!dice.length) return { step: () => false };
   try {
@@ -13080,10 +13092,14 @@ function __tidyStart(diceMap, scene, canvas) {
         dice.forEach((d) => { d.__t.tx = Math.max(-lim.x, Math.min(lim.x, d.__t.tx)); d.__t.tz = Math.max(-lim.z, Math.min(lim.z, d.__t.tz)); });
       }
     }
+    const tilting = typeof window !== 'undefined' && window.__camTilt && setTilt;
+    // при наклоне камеры кубики визуально «поднимаются» на свою высоту — компенсируем сдвигом к зрителю
+    if (tilting) dice.forEach((d) => { d.__t.tz += d.__t.e1.below; });
     dice.forEach((d) => { d.__t.ty = floorY + d.__t.e1.below; });
     const T = 750, t0 = performance.now(), ease = (p) => p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
     const apply = (p) => {
       const k = ease(p);
+      if (tilting) setTilt(k);
       dice.forEach((d) => {
         const t = d.__t, hop = Math.sin(Math.PI * p) * t.e1.radius * 0.35;
         d.mesh.position.set(t.pos0.x + (t.tx - t.pos0.x) * k, t.pos0.y + (t.ty - t.pos0.y) * k + hop, t.pos0.z + (t.tz - t.pos0.z) * k);
@@ -13181,17 +13197,10 @@ class da {
     });
   }
   renderLoop() {
-    { // наклон камеры на 45° (window.__camTilt), нужен для d4
-      const want = window.__camTilt ? 1 : 0, cam = C(this, K).activeCamera;
-      if (cam && this.__tilt !== want) {
-        const Hh = Math.hypot(cam.position.y, cam.position.z) || cam.position.y;
-        cam.position.set(0, Hh * (want ? 0.7071 : 1), Hh * (want ? 0.7071 : 0));
-        cam.setTarget(new M(0, 0, 0));
-        this.__tilt = want;
-      }
-    }
+    if (this.__tiltK && !this.__tidyRun && !(C(this, me) && C(this, me) === Object.keys(C(this, Z)).length))
+      __tilt(this, 0); // новый бросок — камера обратно сверху
     if (C(this, me) && C(this, me) === Object.keys(C(this, Z)).length) {
-      this.__tidyRun || (this.__tidyRun = __tidyStart(C(this, Z), C(this, K), C(this, fe)));
+      this.__tidyRun || (this.__tidyRun = __tidyStart(C(this, Z), C(this, K), C(this, fe), (k) => __tilt(this, k)));
       if (this.__tidyRun.step()) {
         C(this, K).render();
         return;
